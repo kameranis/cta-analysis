@@ -1,0 +1,7 @@
+Plans
+
+1. Use bus/train tracker to get raw data
+2. Run service for a week/month on department's server
+3. Select rides to time through the day across Chicago
+4. Assess neighborhood connectivity and produce a graph embedding
+5. Try to estimate route importance
