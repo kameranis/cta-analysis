@@ -8,6 +8,7 @@ from cta_secrets import BUS_API_KEY
 
 BASE_URL = 'http://www.ctabustracker.com/bustime/api/v2/'
 VEHICLES_ENDPOINT = 'getvehicles'
+ROUTES_ENDPOINT = 'getroutes'
 
 logging.basicConfig(filename='logs/bus.log', format='%(asctime)s\t%(levelname)s\t%(message)s', level=logging.WARN)
 
@@ -36,9 +37,14 @@ def call_api(route: str, **params) -> dict:
     return dict()
 
 
-def get_routes(routes: Union[str, List[str]], tmres: str = 's') -> list:
+def get_vehicles(routes: Union[str, List[str]], tmres: str = 's') -> list:
     route_param = routes if isinstance(routes, str) else ','.join(routes)
     if tmres not in ['m', 's']:
         raise ValueError('Parameter `tmres` can only be one of [\'m\', \'s\']')
     js = call_api(VEHICLES_ENDPOINT, rt=route_param, tmres=tmres)
-    return js.get("vehicle", list())
+    return js.get('vehicle', list())
+
+
+def get_routes() -> list:
+    js = call_api(ROUTES_ENDPOINT)
+    return js.get('routes', list())
