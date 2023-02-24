@@ -71,4 +71,16 @@ def get_locations(rt: Union[int, Iterable[int], str, Iterable[str]] = TRAIN_ROUT
     if isinstance(rt, Iterable):
         rt = ','.join([str(r) for r in rt])
     js = call_api(LOCATIONS_ENDPOINT, rt=rt)
-    return js['route']
+    locations = []
+    for rt in js['route']:
+        rt_name = rt['@name']
+        if 'train' not in rt.keys():
+            continue
+        if isinstance(rt['train'], dict):
+            rt['train']['rt'] = rt_name
+            locations.append(rt['train'])
+            continue
+        for loc in rt['train']:
+            loc['rt'] = rt_name
+            locations.append(loc)
+    return locations

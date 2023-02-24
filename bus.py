@@ -137,7 +137,7 @@ def get_predictions_from_stops(stops: Union[str, List[str]], rts: Union[None, st
         if rts is None:
             predictions.extend(call_api(PREDICTIONS_ENDPOINT, stpid=','.join(stops[i:i + MAX_STOPS_PER_CALL]))['prd'])
         else:
-            predictions.extend(call_api(PREDICTIONS_ENDPOINT, stpid=','.join(stops[i:i+ MAX_STOPS_PER_CALL]), rt=rts)['prd'])
+            predictions.extend(call_api(PREDICTIONS_ENDPOINT, stpid=','.join(stops[i:i + MAX_STOPS_PER_CALL]), rt=rts)['prd'])
     return predictions
 
 
