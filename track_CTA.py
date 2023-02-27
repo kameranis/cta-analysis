@@ -37,7 +37,13 @@ def main():
     scheduler = sched.scheduler(time.time, time.sleep)
     scheduler.enter(0, 1, repeated_tracker, (track_buses, scheduler, bus_file, BUS_CALL_INTERVAL))
     scheduler.enter(0, 1, repeated_tracker, (track_trains, scheduler, train_file, TRAIN_CALL_INTERVAL))
-    scheduler.run(blocking=True)
+    try:
+        scheduler.run(blocking=True)
+    except KeyboardInterrupt:
+        print('Received keyboard interrupt. Bye!')
+    finally:
+        bus_file.close()
+        train_file.close()
 
 
 if __name__ == '__main__':
