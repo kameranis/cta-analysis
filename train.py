@@ -62,11 +62,6 @@ def get_stop_arrival(mapid: Union[None, int] = None,
     return js['eta']
 
 
-def follow(runnumber: Union[int, str]) -> List[Dict]:
-    js = call_api(FOLLOW_ENDPOINT, runnumber=runnumber)
-    return js['eta']
-
-
 def get_locations(rt: Union[int, Iterable[int], str, Iterable[str]] = TRAIN_ROUTES[::]) -> List:
     if isinstance(rt, Iterable):
         rt = ','.join([str(r) for r in rt])
@@ -84,3 +79,17 @@ def get_locations(rt: Union[int, Iterable[int], str, Iterable[str]] = TRAIN_ROUT
             loc['rt'] = rt_name
             locations.append(loc)
     return locations
+
+
+def follow(runnumber: str) -> List[Dict]:
+    js = call_api(FOLLOW_ENDPOINT, runnumber=runnumber)
+    return js.get('eta', list())
+
+
+def get_predictions(runnumbers: Union[Iterable[str], None]) -> List[Dict]:
+    if runnumbers is None:
+        runnumbers = [t['rn'] for t in get_locations()]
+    predictions = []
+    for rn in runnumbers:
+        predictions.extend(follow(rn))
+    return predictions
