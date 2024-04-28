@@ -1,3 +1,10 @@
+"""
+Module for accessing the CTA bus tracker API.
+
+This module provides functions to access various endpoints of the CTA bus tracker API,
+including getting data on routes, vehicles, stops, patterns, and predictions.
+"""
+
 import logging
 from typing import Union, List, Dict
 import requests
@@ -21,14 +28,20 @@ MAX_VEHICLES_PER_CALL = 10
 
 
 class APIError(Exception):
+    """Generic error class to indicate that an error is induced by the API"""
     pass
 
 
 def call_api(route: str, **params) -> Dict:
     """Base function to perform requests to the CTA bus API and handle errors
 
-    :param route:
-
+    :param route: The endpoint route to call.
+    :type route: str
+    :param params: Additional parameters to pass to the API.
+    :type params: Any
+    :return: A dictionary containing the response from the API.
+    :rtype: Dict
+    :raises APIError: If there is an error while calling the API.
     """
     try:
         response = requests.get(BASE_URL + route, params={
@@ -50,6 +63,16 @@ def call_api(route: str, **params) -> Dict:
 
 
 def get_vehicles(routes: Union[str, List[str]], tmres: str = 's') -> List:
+    """Get data about all buses on the specified routes.
+
+    :param routes: A list of route IDs to retrieve data for, or a single route ID as a string.
+    :type routes: Union[str, List[str]]
+    :param tmres: The time resolution of the data. Can be either "m" for minutes or "s" for seconds.
+    :type tmres: str
+    :return: A list of dictionaries containing data about buses on the specified routes.
+    :rtype: List[Dict]
+    :raises ValueError: If the `tmres` parameter is not 'm' or 's'.
+    """
     route_param = routes if isinstance(routes, str) else ','.join(routes)
     if tmres not in ['m', 's']:
         raise ValueError('Parameter `tmres` can only be one of [\'m\', \'s\']')
@@ -58,11 +81,22 @@ def get_vehicles(routes: Union[str, List[str]], tmres: str = 's') -> List:
 
 
 def get_routes() -> List:
+    """Retrieve data about all available bus routes.
+
+    :return: A list of dictionaries containing data about available bus routes.
+    :rtype: List[Dict]
+    """
     js = call_api(ROUTES_ENDPOINT)
     return js.get('routes', list())
 
 
 def get_all_vehicles() -> List:
+    """
+    Retrieve data about all buses on all available routes.
+
+    :return: A list of dictionaries containing data about buses on all routes.
+    :rtype: List[Dict]
+    """
     routes = get_routes()
     rts = [rt['rt'] for rt in routes]
     vehicles = []
@@ -71,12 +105,24 @@ def get_all_vehicles() -> List:
     return vehicles
 
 
-def get_directions(route: str) -> List:
+def get_directions(route: str) -> List[Dict[str, str]]:
+    """Retrieve data about the directions that a bus route can take.
+
+    :param route: The route ID for the bus route.
+    :type route: str
+    :return: A list of strings representing the possible directions for the given route.
+    :rtype: List[str]
+    """
     js = call_api(DIRECTIONS_ENDPOINT, rt=route)
     return js.get('directions', list())
 
 
-def get_all_directions() -> Dict[str, List]:
+def get_all_directions() -> Dict[str, List[str]]:
+    """Retrieve data about all directions for all available routes.
+
+    :return: A dictionary containing lists of directions for each route.
+    :rtype: Dict[str, List[str]]
+    """
     routes = get_routes()
     rts = [rt['rt'] for rt in routes]
     directions = {rt: [direction['dir']
@@ -87,11 +133,31 @@ def get_all_directions() -> Dict[str, List]:
 
 
 def get_route_stops(route: str, direction: str) -> List:
+    """Retrieve data about all stops on a given route and direction.
+
+    :param route: A string representing the route number.
+    :type route: str
+    :param direction: A string representing the direction of the route (i.e. Northbound or Southbound).
+    :type direction: str
+    :return: A list of dictionaries containing data about each stop on the given route and direction.
+    :rtype: List[Dict]
+    """
     js = call_api(STOPS_ENDPOINT, rt=route, dir=direction)
     return js.get('stops', list())
 
 
 def get_all_stops(directions: Union[None, Dict[str, List[str]]] = None) -> Dict[str, Dict[str, List]]:
+    """Retrieve data about all stops for all available routes and directions.
+
+    :param directions: A dictionary of route directions, where each key is a route name and each value is a list of
+                       directions for that route. If None, the function will retrieve all available directions using
+                       get_all_directions().
+    :type directions: Dict[str, List[str]] or None
+    :return: A dictionary containing data about stops for all routes and directions. The keys of the outer dictionary
+             are the route names, and the values are inner dictionaries. The keys of the inner dictionaries are the
+             direction names, and the values are lists of stops for that direction.
+    :rtype: Dict[str, Dict[str, List]]
+    """
     if directions is None:
         directions = get_all_directions()
     all_stops = {rt: {rt_direction: get_route_stops(rt, rt_direction)
@@ -101,6 +167,13 @@ def get_all_stops(directions: Union[None, Dict[str, List[str]]] = None) -> Dict[
 
 
 def get_patterns_from_pids(pids: List[Union[str, int]]) -> Dict[int, Dict]:
+    """Retrieve data about the patterns (i.e., routes) with the given pattern IDs.
+
+    :param pids: A list of pattern IDs.
+    :type pids: List[Union[str, int]]
+    :return: A dictionary containing data about the patterns with the given pattern IDs.
+    :rtype: Dict[int, Dict]
+    """
     patterns = {}
     for i in range(0, len(pids), MAX_PATTERNS_PER_CALL):
         js = call_api(PATTERNS_ENDPOINT, pid=','.join(str(pid) for pid in pids[i:i+MAX_PATTERNS_PER_CALL]))
@@ -110,12 +183,25 @@ def get_patterns_from_pids(pids: List[Union[str, int]]) -> Dict[int, Dict]:
 
 
 def get_pattern_from_rt(rt: str) -> Dict[int, Dict]:
+    """Retrieve data about a pattern for a specific route.
+
+    :param rt: A string representing the route to get pattern data for.
+    :type rt: str
+    :return: A dictionary containing data about the pattern for the specified route.
+    :rtype: Dict[int, Dict]
+    """
     js = call_api(PATTERNS_ENDPOINT, rt=rt)
     patterns = {ptr['pid']: ptr for ptr in js['ptr']}
     return patterns
 
 
 def get_all_patterns() -> Dict[int, Dict]:
+    """
+    Retrieve data about all available patterns.
+
+    :return: A dictionary containing data about all available patterns.
+    :rtype: Dict[int, Dict]
+    """
     routes = get_routes()
     rts = [rt['rt'] for rt in routes]
     patterns = {}
@@ -128,6 +214,18 @@ def get_all_patterns() -> Dict[int, Dict]:
 
 
 def get_predictions_from_stops(stops: Union[str, List[str]], rts: Union[None, str, List[str]] = None) -> List[Dict]:
+    """Retrieve predictions for buses arriving at the given stops.
+
+    :param stops: A list of stop IDs or a single stop ID.
+    :type stops: Union[str, List[str]]
+
+    :param rts: A list of route numbers, a single route number, or None. If specified,
+                only buses for the given route numbers will be included in the predictions.
+    :type rts: Union[None, str, List[str]]
+
+    :return: A list of dictionaries containing prediction data for the specified stops and routes.
+    :rtype: List[Dict]
+    """
     predictions = []
     if isinstance(stops, str):
         stops = [stops]
@@ -142,6 +240,14 @@ def get_predictions_from_stops(stops: Union[str, List[str]], rts: Union[None, st
 
 
 def get_predictions_from_vehicles(vehicles: Union[str, List[str]]) -> List[Dict]:
+    """Retrieve predicted arrival times for all available vehicles with given IDs.
+
+    :param vehicles: A string or list of strings representing vehicle IDs.
+    :type vehicles: Union[str, List[str]]
+
+    :return: A list of dictionaries containing predicted arrival times for all available vehicles with given IDs.
+    :rtype: List[Dict]
+    """
     if isinstance(vehicles, str) and ',' in vehicles:
         vehicles = vehicles.split(',')
     if isinstance(vehicles, str):
@@ -154,6 +260,11 @@ def get_predictions_from_vehicles(vehicles: Union[str, List[str]]) -> List[Dict]
 
 
 def get_all_predictions() -> List[Dict]:
+    """Retrieve data about all bus predictions for all vehicles.
+
+    :return: A list of dictionaries containing data about all bus predictions for all vehicles.
+    :rtype: List[Dict]
+    """
     vehicles = get_all_vehicles()
     vids = [vehicle['vid'] for vehicle in vehicles]
     predictions = get_predictions_from_vehicles(vids)
