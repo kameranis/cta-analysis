@@ -5,9 +5,21 @@ This module provides functions to access various endpoints of the CTA bus tracke
 including getting data on routes, vehicles, stops, patterns, and predictions.
 """
 
+import os
+import sys
 import logging
 from typing import Union, List, Dict
 import requests
+
+SCRIPT_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+
+if SCRIPT_DIRECTORY not in sys.path:
+    sys.path.append(SCRIPT_DIRECTORY)
+
+LOG_FILE = os.path.join(SCRIPT_DIRECTORY, 'logs', 'bus.log')
+if not os.path.exists(os.path.dirname(LOG_FILE)):
+    os.makedirs(os.path.dirname(LOG_FILE), mode=0o766, exist_ok=True)
+logging.basicConfig(filename=LOG_FILE, format='%(asctime)s\t%(levelname)s\t%(message)s', level=logging.WARN)
 
 from cta_secrets import BUS_API_KEY
 
@@ -19,7 +31,6 @@ STOPS_ENDPOINT = 'getstops'
 PATTERNS_ENDPOINT = 'getpatterns'
 PREDICTIONS_ENDPOINT = 'getpredictions'
 
-logging.basicConfig(filename='logs/bus.log', format='%(asctime)s\t%(levelname)s\t%(message)s', level=logging.WARN)
 
 MAX_ROUTES_PER_CALL = 10
 MAX_PATTERNS_PER_CALL = 10
